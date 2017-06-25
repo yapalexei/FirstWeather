@@ -129,6 +129,8 @@ public class WeatherStorageTasks extends AsyncTask<Object, Object, WeatherR> {
 
     @Override
     protected void onPostExecute(WeatherR weather) {
-        delegate.onFetchCompleted(weather);
+        if (delegate != null) {
+            delegate.onFetchCompleted(weather);
+        }
     }
 }

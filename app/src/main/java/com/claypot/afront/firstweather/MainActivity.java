@@ -228,13 +228,14 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
 
     private void saveData(WeatherR weather) {
         try {
-            new WeatherStorageTasks(this, weather, WeatherStorageTasks.ACTION_TYPE.PUT, new TaskCompleteCallback() {
-                @Override
-                public void onFetchCompleted(WeatherR weather) {
-    //                Log.d("WEATHER", weather.toString());
-    //                updateWeatherUI(weather);
-                }
-            }).execute();
+            new WeatherStorageTasks(this, weather, WeatherStorageTasks.ACTION_TYPE.PUT, null).execute();
+//            new WeatherStorageTasks(this, weather, WeatherStorageTasks.ACTION_TYPE.PUT, new TaskCompleteCallback() {
+//                @Override
+//                public void onFetchCompleted(WeatherR weather) {
+//    //                Log.d("WEATHER", weather.toString());
+//    //                updateWeatherUI(weather);
+//                }
+//            }).execute();
         } catch (Exception e) {
             Log.d("STORAGE_DATA", e.toString());
         }
@@ -248,14 +249,6 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
 
         DailyWeatherR dayWeather = weather.getDaily();
         updateDayWeather(dayWeather, fragmentManager);
-    }
-
-    private void updateCurrentWeather(CurrentWeatherR currentWeather, FragmentManager fragmentManager) {
-//        CurrentWeatherFragment currentWeatherFrag = (CurrentWeatherFragment)fragmentManager.findFragmentById(R.id.current_weather_frag);
-//
-//        if (currentWeatherFrag != null) {
-//            currentWeatherFrag.setWeather(currentWeather);
-//        }
     }
 
     private void updateDayWeather(DailyWeatherR dayWeather, FragmentManager fragmentManager) {
