@@ -2,6 +2,7 @@ package com.claypot.afront.firstweather.storage;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import darksky.weather.response.CurrentWeatherR;
+import darksky.weather.response.GenericWeatherR;
 
 import static darksky.weather.response.Constants.APPARENT_TEMPERATURE;
 import static darksky.weather.response.Constants.CLOUDCOVER;
@@ -117,7 +119,30 @@ public class CurrentWeatherDBHelper extends SQLiteOpenHelper {
     }
 
     public CurrentWeatherR getAllWeather() {
-        // TODO: Finish!!
-        return null;
+        String QUERY = String.format("SELECT * FROM %s ", DATABASE_NAME);
+        CurrentWeatherR weather = null;
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery(QUERY, null);
+
+        try {
+            if (cursor.moveToFirst()) {
+                GenericWeatherR gw = CommonWeatherDBHelper.setCommonCols(cursor);
+                CurrentWeatherR w = new CurrentWeatherR(gw);
+                w.setNearestStormDistance(cursor.getFloat(cursor.getColumnIndex(NEAREST_STORM_DISTANCE)));
+                w.setNearestStormBearing(cursor.getFloat(cursor.getColumnIndex(NEAREST_STORM_BEARING)));
+                w.setPrecipIntensity(cursor.getFloat(cursor.getColumnIndex(PRECIP_INTENSITY)));
+                w.setPrecipProbability(cursor.getFloat(cursor.getColumnIndex(PRECIP_PROBABILITY)));
+                w.setTemperature(cursor.getFloat(cursor.getColumnIndex(TEMPERATURE)));
+                w.setApparentTemperature(cursor.getFloat(cursor.getColumnIndex(APPARENT_TEMPERATURE)));
+                weather = w;
+            }
+        } catch (Exception e) {
+            Log.d(CommonWeatherDBHelper.SQLITE_TAG, e.toString());
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+        }
+        return weather;
     }
 }

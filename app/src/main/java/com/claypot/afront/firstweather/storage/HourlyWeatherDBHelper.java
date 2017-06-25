@@ -134,12 +134,11 @@ public class HourlyWeatherDBHelper extends SQLiteOpenHelper {
             if (cursor.moveToFirst()) {
                 do {
                     GenericWeatherR gw = CommonWeatherDBHelper.setCommonCols(cursor);
-
                     HourWeatherR w = new HourWeatherR(gw) ;
-                    w.setApparentTemperature(cursor.getColumnIndex(APPARENT_TEMPERATURE));
-                    w.setPrecipIntensity(cursor.getColumnIndex(PRECIP_INTENSITY));
-                    w.setPrecipProbability(cursor.getColumnIndex(PRECIP_PROBABILITY));
-                    w.setTemperature(cursor.getColumnIndex(TEMPERATURE));
+                    w.setApparentTemperature(cursor.getFloat(cursor.getColumnIndex(APPARENT_TEMPERATURE)));
+                    w.setPrecipIntensity(cursor.getFloat(cursor.getColumnIndex(PRECIP_INTENSITY)));
+                    w.setPrecipProbability(cursor.getFloat(cursor.getColumnIndex(PRECIP_PROBABILITY)));
+                    w.setTemperature(cursor.getFloat(cursor.getColumnIndex(TEMPERATURE)));
 
                     weather.add(w);
                 } while(cursor.moveToNext());

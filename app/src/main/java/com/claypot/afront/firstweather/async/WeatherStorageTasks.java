@@ -51,7 +51,7 @@ public class WeatherStorageTasks extends AsyncTask<Object, Object, WeatherR> {
      * All the saving happens here.
      */
     private void putAllWeather(WeatherR weather) {
-//       putCurWeather(weather.getCurrently()); TODO: Finish!!
+        putCurWeather(weather.getCurrently());
         putDayWeather(weather.getDaily().getData());
         putHourWeather(weather.getHourly().getData());
         putMinuteWeather(weather.getMinutely().getData());
@@ -130,18 +130,5 @@ public class WeatherStorageTasks extends AsyncTask<Object, Object, WeatherR> {
     @Override
     protected void onPostExecute(WeatherR weather) {
         delegate.onFetchCompleted(weather);
-//        delegate.onFetchCompleted(weather);
-//        call.enqueue(new Callback<WeatherR>() {
-//            @Override
-//            public void onResponse(Call<WeatherR> call, Response<WeatherR> response) {
-//                Log.d("API_CALL", "onResponse - got a response");
-//                delegate.onFetchCompleted(response.body());
-//            }
-//
-//            @Override
-//            public void onFailure(Call<WeatherR> call, Throwable t) {
-//                Log.d("API_CALL", "Fail!");
-//            }
-//        });
     }
 }

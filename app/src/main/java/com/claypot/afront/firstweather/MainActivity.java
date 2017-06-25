@@ -32,6 +32,8 @@ import layout.DayListFragment;
 
 public class MainActivity extends AppCompatActivity implements DayListFragment.OnFragmentInteractionListener {
     public static String API = "https://api.darksky.net/";
+    private static final int MINUTES = 15;
+    private static final int WEATHER_EXPIRES_IN_SEC = 60 * MINUTES;
     public static final int PERMISSION_REQUEST_GPS_CODE = 0;
     private LocationManager locationManager;
     private int orientation;
@@ -158,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
                     if (weather != null) {
                         // check if it's old
                         Date now = new Date();
-                        Date expDate = new Date(weather.getCurrently() != null ? (weather.getCurrently().getTime()+ 900)*1000 : now.getTime() - 1);
+                        Date expDate = new Date((weather.getCurrently().getTime() + WEATHER_EXPIRES_IN_SEC)*1000);
                         if (expDate.before(now)) {
                             getRemoteApiWeather(loc);
                         }
