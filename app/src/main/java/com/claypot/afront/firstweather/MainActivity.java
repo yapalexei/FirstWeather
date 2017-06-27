@@ -78,8 +78,9 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(LIFECYCLE_TAG, "onCreate");
         super.onCreate(savedInstanceState);
-
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        Mapbox.getInstance(this, getString(R.string.mapbox_access_token)); // this has to be set BEFORE the layout containing the map gets set/loaded
 
         setContentView(R.layout.activity_main);
 
@@ -128,31 +129,19 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
 //        host.addTab(spec);
 
         // Mapbox code
-        Mapbox.getInstance(this, getString(R.string.mapbox_access_token));
+
 
         // Create a mapView
         mapView = (MapView) findViewById(R.id.mapview);
         mapView.onCreate(savedInstanceState);
-
         loadMap();
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_GPS_CODE);
+        Location loc = getLocation();
+        curLocation = loc;
+        if (loc != null) {
+            getWeatherData(loc);
         }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_CONTACTS)) {
-//
-//            } else {
-//            }
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_GPS_CODE);
 
-        } else {
-            Location loc = getLocation();
-            curLocation = loc;
-            if (loc != null) {
-                getWeatherData(loc);
-            }
-        }
         if (m_sensorEventListener == null) {
             m_sensorEventListener = new SensorEventListener() {
                 @Override
@@ -279,6 +268,13 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
     }
 
     private Location getLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_GPS_CODE);
+        }
+
         String locationProvider = LocationManager.NETWORK_PROVIDER;
         Location lastKnownLocation = null;
         try {
