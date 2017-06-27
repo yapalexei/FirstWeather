@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
         super.onCreate(savedInstanceState);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Mapbox.getInstance(this, getString(R.string.mapbox_access_token));
 
         setContentView(R.layout.activity_main);
 
