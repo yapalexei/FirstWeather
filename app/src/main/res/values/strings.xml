@@ -5,6 +5,8 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="title_activity_day_details">DayDetailsActivity</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="mapbox_access_token">pk.eyJ1IjoieWFwYWxleGVpIiwiYSI6ImNqNGVuaDRwdjBwZ2MycW1rM2FrMmpmNTQifQ.ouDro4DGQ4viVjdBgaI_Xg</string>
+
+    <string name="title_activity_fullscreen_map">FullscreenMapActivity</string>
+    <string name="find_me">Find Me</string>
 </resources>

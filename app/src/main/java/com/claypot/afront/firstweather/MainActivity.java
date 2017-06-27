@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -20,6 +21,16 @@ import android.widget.TabHost;
 import com.claypot.afront.firstweather.async.TaskCompleteCallback;
 import com.claypot.afront.firstweather.async.WeatherAPITasks;
 import com.claypot.afront.firstweather.async.WeatherStorageTasks;
+import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
+import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.maps.MapView;
+import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.style.functions.Function;
+import com.mapbox.mapboxsdk.style.functions.stops.IdentityStops;
+import com.mapbox.mapboxsdk.style.layers.FillExtrusionLayer;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,6 +41,12 @@ import darksky.weather.response.DayWeatherR;
 import darksky.weather.response.WeatherR;
 import layout.DayListFragment;
 
+import static com.mapbox.mapboxsdk.style.layers.Filter.eq;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillExtrusionBase;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillExtrusionColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillExtrusionHeight;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillExtrusionOpacity;
+
 public class MainActivity extends AppCompatActivity implements DayListFragment.OnFragmentInteractionListener {
     public static String API = "https://api.darksky.net/";
     private static final int MINUTES = 15;
@@ -37,11 +54,16 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
     public static final int PERMISSION_REQUEST_GPS_CODE = 0;
     private LocationManager locationManager;
     private int orientation;
+    private static final String LIFECYCLE_TAG = "ACTIVITY_LIFECYCLE";
     SensorEventListener m_sensorEventListener;
+    private MapView mapView;
+    private Location curLocation = null;
+    private MapboxMap curMap = null;
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        mapView.onSaveInstanceState(outState);
         //TODO: save state on sqlite or something
     }
 
@@ -49,14 +71,16 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         //TODO: restore state from sqlite or something
+        Log.d(LIFECYCLE_TAG, "onRestoreInstanceState");
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d("ACTIVITY_LIFECYCLE", "onCreate");
+        Log.d(LIFECYCLE_TAG, "onCreate");
         super.onCreate(savedInstanceState);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Mapbox.getInstance(this, getString(R.string.mapbox_access_token));
 
         setContentView(R.layout.activity_main);
 
@@ -70,27 +94,62 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
         host.addTab(spec);
 
         //Tab 2
-        spec = host.newTabSpec("Hourly");
+        spec = host.newTabSpec("Map");
         spec.setContent(R.id.tab2);
-        spec.setIndicator("Hourly");
+        spec.setIndicator("Map");
         host.addTab(spec);
+        host.setOnTabChangedListener(new TabHost.OnTabChangeListener(){
+            @Override
+            public void onTabChanged(String tabId) {
+                if (curMap != null) {
+                    Log.d("TAB_INTERACTION", "onTabChanged: " + tabId);
+                    if(tabId.equals("Week")) {
+                        Log.d("TAB_INTERACTION", "Weather tab");
+                    }
+                    if(tabId.equals("Map")) {
+                        Log.d("TAB_INTERACTION", "Map tab");
+                        CameraPosition position;
+                        if (curLocation != null) {
+                            Log.d("MAPBOX", "onTabChanged: curLocation: " + curLocation.toString());
+//                            position = new CameraPosition.Builder().target(new LatLng(curLocation)).zoom(9.0).build();
+                            position = new CameraPosition.Builder().target(new LatLng(45.520389, -122.671327)).zoom(17.0).build();
+                        } else {
+                            Log.d("MAPBOX", "onTabChanged: curLocation is null");
+                            position = new CameraPosition.Builder().target(new LatLng(45.520389, -122.671327)).zoom(9.0).build();
+                        }
 
-        //Tab 3
-        spec = host.newTabSpec("Minutely");
-        spec.setContent(R.id.tab3);
-        spec.setIndicator("Minutely");
-        host.addTab(spec);
+                        curMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), 3000);
+                    }
+                }
+            }});
+//        //Tab 3
+//        spec = host.newTabSpec("Minutely");
+//        spec.setContent(R.id.tab3);
+//        spec.setIndicator("Minutely");
+//        host.addTab(spec);
 
+        // Mapbox code
+        Mapbox.getInstance(this, getString(R.string.mapbox_access_token));
+
+        // Create a mapView
+        mapView = (MapView) findViewById(R.id.mapview);
+        mapView.onCreate(savedInstanceState);
+
+        loadMap();
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_CONTACTS)) {
-
-            } else {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_GPS_CODE);
-            }
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_GPS_CODE);
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_CONTACTS)) {
+//
+//            } else {
+//            }
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_GPS_CODE);
 
         } else {
             Location loc = getLocation();
+            curLocation = loc;
             if (loc != null) {
                 getWeatherData(loc);
             }
@@ -118,6 +177,52 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
             sm.registerListener(m_sensorEventListener, sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL);
         }
 
+    }
+
+    private void loadMap() {
+        // Add a MapboxMap
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                Log.d("MAPBOX", "loaded map");
+                curMap = mapboxMap;
+//                FillLayer fillsLayer = new FillLayer("fills", "population");
+//                fillsLayer.setSourceLayer("outgeojson");
+//                fillsLayer.setFilter(Filter.all(Filter.lt("pkm2", 300000)));
+//                fillsLayer.withProperties(
+//                        fillColor(Function.property("pkm2", exponential(
+//                                stop(0, fillColor(Color.parseColor("#160e23"))),
+//                                stop(14500, fillColor(Color.parseColor("#00617f"))),
+//                                stop(145000, fillColor(Color.parseColor("#55e9ff"))))
+//                                .withBase(1f)))
+//                );
+//                mapboxMap.addLayerBelow(fillsLayer, "water");
+
+                // 5.1.0-beta
+                FillExtrusionLayer fillExtrusionLayer = new FillExtrusionLayer("3d-buildings", "composite");
+                fillExtrusionLayer.setSourceLayer("building");
+                fillExtrusionLayer.setFilter(eq("extrude", "true"));
+                fillExtrusionLayer.setProperties(
+                        fillExtrusionColor(Color.LTGRAY),
+                        fillExtrusionHeight(Function.property("height", new IdentityStops<Float>())),
+                        fillExtrusionBase(Function.property("min_height", new IdentityStops<Float>())),
+                        fillExtrusionOpacity(0.6f)
+                );
+//                fillExtrusionLayer.withProperties(
+//                        fillExtrusionColor(Function.property("pkm2", exponential(
+//                                stop(0, fillColor(Color.parseColor("#160e23"))),
+//                                stop(14500, fillColor(Color.parseColor("#00617f"))),
+//                                stop(145000, fillColor(Color.parseColor("#55e9ff"))))
+//                                .withBase(1f))),
+//                        fillExtrusionBase(0f),
+//                        fillExtrusionHeight(Function.property("pkm2", exponential(
+//                                stop(0, fillExtrusionHeight(0f)),
+//                                stop(1450000, fillExtrusionHeight(20000f)))
+//                                .withBase(1f))));
+                mapboxMap.addLayerBelow(fillExtrusionLayer, "airport-label");
+
+            }
+        });
     }
 
     @Override
@@ -187,34 +292,50 @@ public class MainActivity extends AppCompatActivity implements DayListFragment.O
 
     @Override
     protected void onResume() {
-        Log.d("ACTIVITY_LIFECYCLE", "onResume");
+        Log.d(LIFECYCLE_TAG, "onResume");
         super.onResume();
+        mapView.onResume();
     }
 
     @Override
     protected void onRestart() {
-        Log.d("ACTIVITY_LIFECYCLE", "onRestart");
+        Log.d(LIFECYCLE_TAG, "onRestart");
         super.onRestart();
     }
 
     @Override
     protected void onPause() {
-        Log.d("ACTIVITY_LIFECYCLE", "onPause");
+        Log.d(LIFECYCLE_TAG, "onPause");
         super.onPause();
+        mapView.onPause();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mapView.onStart();
     }
 
     @Override
     protected void onStop() {
-        Log.d("ACTIVITY_LIFECYCLE", "onStop");
+        Log.d(LIFECYCLE_TAG, "onStop");
         SensorManager sm = (SensorManager)getSystemService(SENSOR_SERVICE);
         sm.unregisterListener(m_sensorEventListener);
         super.onStop();
+        mapView.onStop();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        mapView.onLowMemory();
     }
 
     @Override
     protected void onDestroy() {
         Log.d("ACTIVITY_LIFECYCLE", "onDestroy");
         super.onDestroy();
+        mapView.onDestroy();
     }
 
     @Override
